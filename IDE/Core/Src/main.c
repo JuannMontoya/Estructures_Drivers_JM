@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "ring_buffer.h"
+#include "Keypad.h"
+#include <ssd1306.h>
+#include <ssd1306_fonts.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -158,12 +161,84 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  if (key_event != 0xFF) { // check if there is a event from the EXTi callback
+		  uint16_t key_pressed = keypad_handler(key_event); // call the keypad handler
+
+			  if(key_pressed != 0xFF ){
+				  printf("Tecla presionada %x\r\n", key_pressed); // print the key pressed in YAT
+				  ring_buffer_put(&ring_buffer_uart_rx, key_pressed);
+
+			  }
+
+			  key_event = 0xFF; // clean the event
+
+			  if(key_pressed==0x0E){ //if the key pressed is * resets the program
+
+				  ring_buffer_reset(&ring_buffer_uart_rx);//Reset of ring_buffer
+				  	  printf("RESE");//print reset in terminal
+				  	  ssd1306_Init(); //initializes the display and shows the message
+				  	  ssd1306_SetCursor(50, 50);
+				      ssd1306_Fill(Black);
+				      ssd1306_WriteString("RESET", Font_7x10, White);
+				      ssd1306_UpdateScreen();
+
+
+
+			  }
+
+			  if(memcmp(rx_buffer, code, 5)==0 && ring_buffer_is_full(&ring_buffer_uart_rx)==1)//generates "pass" message when the combination is correct
+			  {
+
+				  ssd1306_Init();//initializes the display and shows the message
+				      ssd1306_Fill(Black);
+				      ssd1306_SetCursor(50, 50);
+				      ssd1306_WriteString("PASS", Font_7x10, White);
+				      ssd1306_UpdateScreen();
+
+
+			  }
+
+			  if(memcmp(rx_buffer, code, 5)!=0 && ring_buffer_is_full(&ring_buffer_uart_rx)==1) //compares the correct combination with the one delivered and generates the message "fail" when the combination is incorrect.
+			  {
+
+				  ssd1306_Init();//initializes the display and shows the message
+				      ssd1306_Fill(Black);
+				      ssd1306_SetCursor(50, 50);
+				      ssd1306_WriteString("FAIL", Font_7x10, White);
+				      ssd1306_UpdateScreen();
+
+
+			  }
+
+			  if(ring_buffer_is_full(&ring_buffer_uart_rx)==1)//shows the sequence if buffer ring is full
+			  {
+
+			printf("secuencia %x , %x , %x , %x , %x \r\n",rx_buffer[0],rx_buffer[1],rx_buffer[2],rx_buffer[3],rx_buffer[4]);
+				ring_buffer_reset(&ring_buffer_uart_rx);
+
+			  }
+
+
+
+		  }
+
+	  }
+
+
+
+
+
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
+
+
 
 /**
   * @brief System Clock Configuration
